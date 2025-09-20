@@ -20,13 +20,14 @@ const Register = () => {
 
     try {
       await register(name, email, password, role)
-      navigate('/')
+      navigate('/admin')
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed')
     } finally {
       setLoading(false)
     }
   }
+
 
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
