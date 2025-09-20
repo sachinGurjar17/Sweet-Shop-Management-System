@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Sweet, SearchFilters } from '../types'
+import { Sweet } from '../types'
 import { useAuth } from '../context/AuthContext'
 import * as api from '../services/api'
 import SweetCard from '../components/SweetCard'
@@ -7,10 +7,10 @@ import SearchBar from '../components/SearchBar'
 
 const Home = () => {
   const { user } = useAuth()
-  const [sweets, setSweets] = useState<Sweet[]>([])
+  const [allSweets, setAllSweets] = useState<Sweet[]>([])
+  const [displayedSweets, setDisplayedSweets] = useState<Sweet[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [isSearching, setIsSearching] = useState(false)
 
   useEffect(() => {
     loadSweets()
@@ -19,8 +19,9 @@ const Home = () => {
   const loadSweets = async () => {
     try {
       setLoading(true)
-      const data = await api.getSweets(1, 50)
-      setSweets(data.sweets)
+      const data = await api.getSweets(1, 100)
+      setAllSweets(data.sweets)
+      setDisplayedSweets(data.sweets)
       setError('')
     } catch (err: any) {
       setError('Failed to load sweets')
@@ -29,26 +30,8 @@ const Home = () => {
     }
   }
 
-  const handleSearch = async (filters: SearchFilters) => {
-    const hasFilters = filters.name || filters.category || filters.minPrice || filters.maxPrice
-    
-    if (!hasFilters) {
-      setIsSearching(false)
-      loadSweets()
-      return
-    }
-
-    try {
-      setIsSearching(true)
-      setLoading(true)
-      const data = await api.searchSweets(filters)
-      setSweets(data.sweets)
-      setError('')
-    } catch (err: any) {
-      setError('Search failed')
-    } finally {
-      setLoading(false)
-    }
+  const handleFilteredResults = (filteredSweets: Sweet[]) => {
+    setDisplayedSweets(filteredSweets)
   }
 
   if (loading) {
@@ -73,7 +56,10 @@ const Home = () => {
         )}
       </div>
 
-      <SearchBar onSearch={handleSearch} />
+      <SearchBar 
+        allSweets={allSweets} 
+        onFilteredResults={handleFilteredResults} 
+      />
 
       {error && (
         <div className="bg-red-100 text-red-700 p-4 rounded mb-6">
@@ -81,13 +67,17 @@ const Home = () => {
         </div>
       )}
 
-      {sweets.length === 0 ? (
+      {displayedSweets?.length === 0 && allSweets?.length > 0 ? (
         <div className="text-center text-gray-500 py-8">
-          {isSearching ? 'No sweets found matching your search criteria.' : 'No sweets available at the moment.'}
+          No sweets found matching your search criteria.
+        </div>
+      ) : displayedSweets?.length === 0 ? (
+        <div className="text-center text-gray-500 py-8">
+          No sweets available at the moment.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sweets.map((sweet) => (
+          {displayedSweets.map((sweet) => (
             <SweetCard
               key={sweet._id}
               sweet={sweet}
