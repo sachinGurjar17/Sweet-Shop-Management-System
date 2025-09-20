@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { SearchFilters } from '../types'
+import { SearchFilters, Sweet } from '../types'
 
 interface SearchBarProps {
-  onSearch: (filters: SearchFilters) => void
+  allSweets: Sweet[]
+  onFilteredResults: (filteredSweets: Sweet[]) => void
 }
 
-const SearchBar = ({ onSearch }: SearchBarProps) => {
+const SearchBar = ({ allSweets, onFilteredResults }: SearchBarProps) => {
   const [filters, setFilters] = useState<SearchFilters>({
     name: '',
     category: '',
@@ -18,15 +19,49 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
     'lollipop', 'toffee', 'marshmallow', 'other'
   ]
 
+  const filterSweets = (currentFilters: SearchFilters) => {
+    let filtered = [...allSweets]
+
+    if (currentFilters.name.trim()) {
+      const searchTerm = currentFilters.name.toLowerCase()
+      filtered = filtered.filter(sweet => 
+        sweet.name.toLowerCase().includes(searchTerm) ||
+        (sweet.description && sweet.description.toLowerCase().includes(searchTerm))
+      )
+    }
+
+    if (currentFilters.category) {
+      filtered = filtered.filter(sweet => sweet.category === currentFilters.category)
+    }
+
+    if (currentFilters.minPrice) {
+      const minPrice = parseFloat(currentFilters.minPrice)
+      filtered = filtered.filter(sweet => sweet.price >= minPrice)
+    }
+
+    if (currentFilters.maxPrice) {
+      const maxPrice = parseFloat(currentFilters.maxPrice)
+      filtered = filtered.filter(sweet => sweet.price <= maxPrice)
+    }
+
+    onFilteredResults(filtered)
+  }
+
+  const handleInputChange = (field: keyof SearchFilters, value: string) => {
+    const newFilters = { ...filters, [field]: value }
+    setFilters(newFilters)
+    filterSweets(newFilters)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSearch(filters)
+    filterSweets(filters)
   }
 
   const handleClear = () => {
     const emptyFilters = { name: '', category: '', minPrice: '', maxPrice: '' }
     setFilters(emptyFilters)
-    onSearch(emptyFilters)
+    onFilteredResults(allSweets)
   }
 
   return (
@@ -40,7 +75,7 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
             type="text"
             placeholder="Sweet name..."
             value={filters.name}
-            onChange={(e) => setFilters({...filters, name: e.target.value})}
+            onChange={(e) => handleInputChange('name', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
         </div>
@@ -51,7 +86,7 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
           </label>
           <select
             value={filters.category}
-            onChange={(e) => setFilters({...filters, category: e.target.value})}
+            onChange={(e) => handleInputChange('category', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-pink-500"
           >
             <option value="">All Categories</option>
@@ -70,7 +105,7 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
             step="0.01"
             placeholder="0.00"
             value={filters.minPrice}
-            onChange={(e) => setFilters({...filters, minPrice: e.target.value})}
+            onChange={(e) => handleInputChange('minPrice', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
         </div>
@@ -84,7 +119,7 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
             step="0.01"
             placeholder="100.00"
             value={filters.maxPrice}
-            onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
+            onChange={(e) => handleInputChange('maxPrice', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
         </div>
@@ -92,17 +127,11 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
       
       <div className="flex space-x-3">
         <button
-          type="submit"
-          className="bg-pink-600 text-white px-6 py-2 rounded hover:bg-pink-700 transition"
-        >
-          Search
-        </button>
-        <button
           type="button"
           onClick={handleClear}
           className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition"
         >
-          Clear
+          Clear Filters
         </button>
       </div>
     </form>
